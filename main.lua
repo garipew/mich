@@ -222,7 +222,7 @@ else
 			if at == nil then
 				table.insert(selected, itens[cursor])
 			else
-				table.remove(selected, itens[cursor])
+				table.remove(selected, at)
 			end
 		end
 	
