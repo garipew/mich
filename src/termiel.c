@@ -6,6 +6,9 @@
 struct termios fixed;
 struct termios unfixed;
 
+struct winsize ws;
+
+
 int termfd;
 
 
@@ -38,4 +41,9 @@ void restore_term(){
 
 int raw_read(int fd, char* dst){
 	return read(termfd, dst, 1);
+}
+
+
+int get_size(){
+	return ioctl(termfd, TIOCGWINSZ, &ws);
 }

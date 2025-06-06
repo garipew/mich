@@ -10,6 +10,7 @@ static const luaL_Reg luaterm[] = {
 	{"load_term", lua_load_term},
 	{"get_fd", lua_get_fd},
 	{"isatty", lua_isatty},
+	{"get_size", lua_get_size},
 	{NULL, NULL}
 };
 
@@ -73,4 +74,15 @@ int lua_isatty(lua_State* L){
 	int fd = luaL_checkinteger(L, 1);
 	lua_pushinteger(L, isatty(fd));
 	return 1;
+}
+
+
+int lua_get_size(lua_State* L){
+	if(get_size() == -1){
+		return luaL_error(L, "error getting term size");
+	}
+	get_size();
+	lua_pushinteger(L, ws.ws_row);
+	lua_pushinteger(L, ws.ws_col);
+	return 2;
 }

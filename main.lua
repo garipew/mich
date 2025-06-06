@@ -7,6 +7,9 @@ local luaterm = assert(require("luaterm"))
 local isatty = assert(luaterm.isatty(luaterm.get_fd(io.stdin)) == 1,
 		"mich must be run from a tty")
 
+local hei,wid = luaterm.get_size()
+
+
 help = [[
 Name
 	mich
@@ -41,6 +44,12 @@ options_table = {
 	["-s"] = 1,
 }
 
+
+keymap = {
+	["j"] = 1,
+	["k"] = -1,
+	["\t"] = 0,
+}
 
 --[[
 Name
@@ -148,40 +157,71 @@ function find(table, item)
 end
 
 
-function display_itens(screen, itens, cursor, selected)
+function display_itens(screen, itens, cursor, scroll, hei, selected)
 	local clean = "\27[2J\27[H"
-	for idx,item in ipairs(itens) do
+	for i=scroll,scroll+hei-1 do
+		if i > #itens or i >= scroll+hei then
+			break
+		end
 		local line = ""
-		if idx == 1 then
+		if i == scroll then
 			line = line .. clean
 		end
-		if idx == cursor then
-			line = line .. "\27[0;30;44m" .. item .. "\27[0m"
-		elseif find(selected, item) ~= nil then
-			line = line .. "\27[0;30;45m" .. item .. "\27[0m"
+		if i == cursor-scroll+1 then
+			line = line .. "\27[0;30;44m" .. itens[i] .. "\27[0m"
+		elseif find(selected, itens[i]) ~= nil then
+			line = line .. "\27[0;30;45m" .. itens[i] .. "\27[0m"
 		else
-			line = line ..item
+			line = line .. itens[i]
 		end
-		screen:write(line.."\n")
+		screen:write(line .. " " .. i .. "\n")
 	end
 end
 
 
-function select_item(action)
-	if action == "\t" then
-		return true
-	end
-	return false
+function scroll_up(scroll)
+	if scroll > 1 then
+		return scroll-1
+	end	
+	return scroll
 end
 
 
-function move_cursor(action)
-	if action == "j" then
-		return 1
-	elseif action == "k" then
-		return -1
+function scroll_down(scroll, hei, max)
+	if scroll+hei-1 < max then
+		return scroll+1
 	end
-	return 0
+	return scroll
+end
+
+
+function move_cursor(action, cursor, scroll, hei, max)
+	local new_cursor = cursor + keymap[action]
+	local new_scroll = scroll
+
+	if new_cursor > max then
+		new_cursor = max
+	end
+		
+	io.stderr:write("dump for you:\nhei: ".. hei.."max: ".. max .. "\n")
+	
+	if new_cursor < 1 then
+		io.stderr:write("trying to scroll up\n")
+		new_scroll = scroll_up(scroll)
+		if new_scroll == scroll then
+			io.stderr:write("couldnt up:(\n")
+			new_cursor = cursor
+		end
+	elseif new_cursor > scroll+hei then
+		io.stderr:write("trying to scroll down\n")
+		new_scroll = scroll_down(scroll, hei, max)
+		if new_scroll == scroll then
+			io.stderr:write("couldnt down:(\n")
+			new_cursor = cursor
+		end
+	end
+
+	return new_cursor,new_scroll
 end
 
 
@@ -195,7 +235,8 @@ end
 
 
 options = process_options(arg, options_table)
-cursor = tonumber(options.cursor)
+scroll = 1
+cursor = 1
 selected = {}
 
 if #arg-options.count == 0 then
@@ -213,22 +254,25 @@ else
 	repeat
 		delim = options.delim
 		itens = parse_str(str, delim)
-		display_itens(screen, itens, cursor, selected)
+		display_itens(screen, itens, cursor, scroll, hei, selected)
 
 		local action = luaterm.raw_read()
+		if keymap[action] == nil then
+			goto continue
+		end
 
-		if select_item(action) then
+		if action == '\t' then
 			local at = find(selected, itens[cursor])
 			if at == nil then
 				table.insert(selected, itens[cursor])
 			else
 				table.remove(selected, at)
 			end
+		else
+			cursor,scroll = move_cursor(action, cursor, scroll, hei, #itens)
 		end
-	
-		cursor = cursor + move_cursor(action)
-		if cursor < 1 then cursor = 1 end
-		if cursor > #itens then cursor = #itens end
+
+		::continue::
 	until action == "q" or action == "\n"
 	screen:write("\27[2J\27[H")
 	screen:close()
