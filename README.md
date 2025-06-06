@@ -34,7 +34,7 @@ In order to learn more about mich options, try
 ### Navigation
 mich implements vim-like navigation
 
-<kbd>j</kbd> - Move cursor down
-<kbd>k</kbd> - Move cursor up
-<kbd>Tab</kbd> - Select item under the cursor
-<kbd>Enter</kbd> - Prints selected itens to stdout
+- <kbd>j</kbd> - Move cursor down
+- <kbd>k</kbd> - Move cursor up
+- <kbd>Tab</kbd> - Select item under the cursor
+- <kbd>Enter</kbd> - Prints selected itens to stdout
