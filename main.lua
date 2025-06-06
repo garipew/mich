@@ -1,26 +1,34 @@
 #!/usr/bin/env lua
 
+package.cpath = "./build/?.so;"..package.cpath
+
+local luaterm = require("luaterm")
+
+
 help = [[
 Name
-	selector
+	mich
 Synopsis
-	selector [-h] [-d DELIM] [itens]
+	mich [-h] [-d DELIM] [itens]
 
 Description
 	The objective of this program is to present a minimal UI for
 	the user to choose between different itens.
 
-	If no item is given, selector presents the content of cwd
+	If no item is given, rodion presents the content of cwd
 	as options.
 
 	The itens selected by the user are written to stdout.
+
+	The name comes from Prince Michkin, the main character
+	on the novel The Idiot.
 
 Options
 	-h - Displays this message.
 	-d DELIM - Set the delimiter of the itens to DELIM.
                    The default value of DELIM used is the space
 		   character.
-	-s SEL - Define the selected item to SEL.
+	-s SEL - Define the start value of the cursor to SEL.
 		 The default value of SEL is 1.
 ]]
 
@@ -175,7 +183,9 @@ function move_cursor(action)
 end
 
 
-old_screen = io.output()
+luaterm.load_term(luaterm.get_fd(io.stdin))
+luaterm.disable_canon(1, 0)
+
 screen = io.open("/dev/tty", "w")
 if screen == nil then
 	os.exit()
@@ -203,7 +213,7 @@ else
 		itens = parse_str(str, delim)
 		display_itens(screen, itens, cursor, selected)
 
-		local action = io.read(1)
+		local action = luaterm.raw_read()
 
 		if select_item(action) then
 			local at = find(selected, itens[cursor])
@@ -229,3 +239,6 @@ else
 		end
 	end
 end
+
+luaterm.enable_canon()
+luaterm.restore_term()
