@@ -3,6 +3,7 @@
 
 #include <termios.h>
 #include <stddef.h>
+#include <unistd.h>
 
 #define CTRLD 0x4
 

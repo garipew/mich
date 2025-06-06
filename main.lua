@@ -2,8 +2,10 @@
 
 package.cpath = "./build/?.so;"..package.cpath
 
-local luaterm = require("luaterm")
+local luaterm = assert(require("luaterm"))
 
+local isatty = assert(luaterm.isatty(luaterm.get_fd(io.stdin)) == 1,
+		"mich must be run from a tty")
 
 help = [[
 Name

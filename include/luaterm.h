@@ -14,4 +14,5 @@ int lua_disable_canon(lua_State*);
 int lua_enable_canon(lua_State*);
 int lua_restore_term(lua_State*);
 int lua_get_fd(lua_State*);
+int lua_isatty(lua_State*);
 #endif

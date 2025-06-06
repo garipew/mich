@@ -9,6 +9,7 @@ static const luaL_Reg luaterm[] = {
 	{"disable_canon", lua_disable_canon},
 	{"load_term", lua_load_term},
 	{"get_fd", lua_get_fd},
+	{"isatty", lua_isatty},
 	{NULL, NULL}
 };
 
@@ -64,5 +65,12 @@ int lua_get_fd(lua_State* L){
 	}
 	int fd = fileno(*f);
 	lua_pushinteger(L, fd);
+	return 1;
+}
+
+
+int lua_isatty(lua_State* L){
+	int fd = luaL_checkinteger(L, 1);
+	lua_pushinteger(L, isatty(fd));
 	return 1;
 }
