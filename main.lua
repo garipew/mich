@@ -95,18 +95,16 @@ function process_options(args, options_table)
 	local delim = " "
 	local cursor = 1
 	for opt,argvs in pairs(options) do
-		count = count+1
+		count = count+1+options_table[opt]
 		if opt == "-h" then
 			print(help)
 			os.exit(0)
 		end
 		if opt == "-d" then
 			delim = argvs[1]
-			count = count+1
 		end	
 		if opt == "-s" then
 			cursor = argvs[1]
-			count = count+1
 		end
 	end		
 	return {count=count, cursor=cursor, delim=delim}
@@ -160,21 +158,25 @@ end
 function display_itens(screen, itens, cursor, scroll, hei, selected)
 	local clean = "\27[2J\27[H"
 	for i=scroll,scroll+hei-1 do
-		if i > #itens or i >= scroll+hei then
+		if i > #itens then
 			break
 		end
 		local line = ""
 		if i == scroll then
 			line = line .. clean
 		end
-		if i == cursor-scroll+1 then
+		if i == cursor+scroll-1 then
 			line = line .. "\27[0;30;44m" .. itens[i] .. "\27[0m"
 		elseif find(selected, itens[i]) ~= nil then
 			line = line .. "\27[0;30;45m" .. itens[i] .. "\27[0m"
 		else
 			line = line .. itens[i]
 		end
-		screen:write(line .. " " .. i .. "\n")
+		if i ~= scroll+hei-1 then
+			line = line .. "\n"
+		end
+		screen:write(line)
+		screen:flush()
 	end
 end
 
@@ -202,23 +204,13 @@ function move_cursor(action, cursor, scroll, hei, max)
 	if new_cursor > max then
 		new_cursor = max
 	end
-		
-	io.stderr:write("dump for you:\nhei: ".. hei.."max: ".. max .. "\n")
 	
 	if new_cursor < 1 then
-		io.stderr:write("trying to scroll up\n")
 		new_scroll = scroll_up(scroll)
-		if new_scroll == scroll then
-			io.stderr:write("couldnt up:(\n")
-			new_cursor = cursor
-		end
-	elseif new_cursor > scroll+hei then
-		io.stderr:write("trying to scroll down\n")
+		new_cursor = 1
+	elseif new_cursor > hei then
 		new_scroll = scroll_down(scroll, hei, max)
-		if new_scroll == scroll then
-			io.stderr:write("couldnt down:(\n")
-			new_cursor = cursor
-		end
+		new_cursor = hei
 	end
 
 	return new_cursor,new_scroll
@@ -234,11 +226,11 @@ if screen == nil then
 end
 
 
-options = process_options(arg, options_table)
 scroll = 1
 cursor = 1
 selected = {}
 
+--[[
 if #arg-options.count == 0 then
 	print("hello from cwd")
 else
@@ -262,9 +254,9 @@ else
 		end
 
 		if action == '\t' then
-			local at = find(selected, itens[cursor])
+			local at = find(selected, itens[scroll+cursor-1])
 			if at == nil then
-				table.insert(selected, itens[cursor])
+				table.insert(selected, itens[scroll+cursor-1])
 			else
 				table.remove(selected, at)
 			end
@@ -278,13 +270,13 @@ else
 	screen:close()
 
 	if #selected == 0 then
-		print(itens[cursor])
+		print(itens[scroll+cursor-1])
 	else
 		for _,v in ipairs(selected) do
 			print(v)
 		end
 	end
 end
-
+--]]
 luaterm.enable_canon()
 luaterm.restore_term()
