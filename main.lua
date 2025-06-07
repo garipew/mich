@@ -14,14 +14,11 @@ help = [[
 Name
 	mich
 Synopsis
-	mich [-h] [-d DELIM] [itens]
+	mich [-h] [-d DELIM] [-c CURS] ITENS
 
 Description
 	The objective of this program is to present a minimal UI for
 	the user to choose between different itens.
-
-	If no item is given, rodion presents the content of cwd
-	as options.
 
 	The itens selected by the user are written to stdout.
 
@@ -33,15 +30,15 @@ Options
 	-d DELIM - Set the delimiter of the itens to DELIM.
                    The default value of DELIM used is the space
 		   character.
-	-s SEL - Define the start value of the cursor to SEL.
-		 The default value of SEL is 1.
+	-c CURS - Define the start value of the cursor to CURS.
+		 The default value of CURS is 1.
 ]]
 
 
 options_table = {
 	["-d"] = 1,
 	["-h"] = 0,
-	["-s"] = 1,
+	["-c"] = 1,
 }
 
 
@@ -89,22 +86,34 @@ function extract_options(args, options_table)
 end
 
 
+function print_bad_argument(error_msg)
+	print("bad argument: " .. error_msg)
+	os.exit(10)	
+end
+
+
 function process_options(args, options_table)
 	local options = extract_options(args, options_table)
 	local count = 0
 	local delim = " "
 	local cursor = 1
-	for opt,argvs in pairs(options) do
+	for opt,optargs in pairs(options) do
 		count = count+1+options_table[opt]
 		if opt == "-h" then
 			print(help)
 			os.exit(0)
 		end
 		if opt == "-d" then
-			delim = argvs[1]
+			delim = optargs[1]
+			if delim == nil then
+				print_bad_argument("DELIM must be defined")
+			end
 		end	
-		if opt == "-s" then
-			cursor = argvs[1]
+		if opt == "-c" then
+			cursor = tonumber(optargs[1])
+			if cursor == nil then
+				print_bad_argument("CURS must be a number")
+			end
 		end
 	end		
 	return {count=count, cursor=cursor, delim=delim}
@@ -228,22 +237,32 @@ function get_itens(args, options_count)
 end
 
 
-local scroll = 1
-local cursor = 1
 local selected = {}
 local options = process_options(arg, options_table)
 local itens_str = get_itens(arg, options.count)
 if itens_str == nil then
-	options.delim = " "
-	itens_str = "wow no itens" 
+	print("Usage: " .. arg[0] .. " [-h] [-d DELIM] [-c CURS] ITENS")
+	os.exit(1)
 end
 local itens = parse_str(itens_str, options.delim)
 
+local cursor = options.cursor
+local scroll = 1
+if cursor < 1 then
+	cursor = 1
+elseif cursor > #itens then
+	cursor = #itens
+end
+if cursor > hei then
+	scroll = cursor+1-hei
+	cursor = hei
+end
 local screen = io.open("/dev/tty", "w")
 if screen == nil then
-	os.exit()
+	os.exit(2)
 end
 
+screen:write("\27[?25l") -- Make cursor invisible
 luaterm.load_term(luaterm.get_fd(io.stdin))
 luaterm.disable_canon(1, 0)
 
@@ -266,7 +285,8 @@ repeat
 	end
 	::continue::
 until action == '\n'
-screen:write("\27[2J\27[H")
+screen:write("\27[2J\27[H") -- Clear screen
+screen:write("\27[?25h") -- Make cursor visible
 screen:close()
 
 luaterm.enable_canon()
