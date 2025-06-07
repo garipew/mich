@@ -8,7 +8,7 @@ When <kbd>Enter</kbd> is pressed, all selected itens are written to stdout.
 If no item is selected, on <kbd>Enter</kbd> mich will write the option highlighted by the cursor.
 
 
-## Install
+## Installation
 To install mich, first clone this repository with
 ```
 git clone https://github.com/garipew/mich.git
@@ -25,7 +25,7 @@ To uninstall, ~~dont bother~~
 sudo ./uninstall.sh
 ```
 
-## Executing
+## Execution
 To execute mich, pass the options as arguments
 ```
 mich option1 option2 option3
