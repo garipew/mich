@@ -8,27 +8,32 @@ When <kbd>Enter</kbd> is pressed, all selected itens are written to stdout.
 If no item is selected, on <kbd>Enter</kbd> mich will write the option highlighted by the cursor.
 
 
-## Building
-To build mich, first clone this repository with
+## Install
+To install mich, first clone this repository with
 ```
 git clone https://github.com/garipew/mich.git
 cd mich
 ```
 
-Then, execute the build script
+Then, run the install script
 ```
-./build.sh
+sudo ./install.sh
+```
+
+To uninstall, ~~dont bother~~ 
+```
+sudo ./uninstall.sh
 ```
 
 ## Executing
 To execute mich, pass the options as arguments
 ```
-./main.lua option1 option2 option3
+mich option1 option2 option3
 ```
 
 In order to learn more about mich options, try
 ```
-./main.lua -h
+mich -h
 ```  
 
 ### Navigation
