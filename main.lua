@@ -176,8 +176,8 @@ function display_itens(screen, itens, cursor, scroll, hei, selected)
 			line = line .. "\n"
 		end
 		screen:write(line)
-		screen:flush()
 	end
+	screen:flush()
 end
 
 
@@ -217,66 +217,65 @@ function move_cursor(action, cursor, scroll, hei, max)
 end
 
 
-luaterm.load_term(luaterm.get_fd(io.stdin))
-luaterm.disable_canon(1, 0)
+function get_itens(args, options_count)
+	local not_opt = arg[options_count+1]
+	if not_opt ~= nil then
+		for i=2,#arg-options_count do
+			not_opt = not_opt .. " " .. arg[options_count+i]
+		end
+	end
+	return not_opt
+end
 
-screen = io.open("/dev/tty", "w")
+
+local scroll = 1
+local cursor = 1
+local selected = {}
+local options = process_options(arg, options_table)
+local itens_str = get_itens(arg, options.count)
+if itens_str == nil then
+	options.delim = " "
+	itens_str = "wow no itens" 
+end
+local itens = parse_str(itens_str, options.delim)
+
+local screen = io.open("/dev/tty", "w")
 if screen == nil then
 	os.exit()
 end
 
+luaterm.load_term(luaterm.get_fd(io.stdin))
+luaterm.disable_canon(1, 0)
 
-scroll = 1
-cursor = 1
-selected = {}
-
---[[
-if #arg-options.count == 0 then
-	print("hello from cwd")
-else
-	if options.count == 0 then
-		str = ""
-		for _,v in ipairs(arg) do
-			str = str .. v .. " " 
-		end
-	else
-		str = arg[#arg]
+repeat
+	display_itens(screen, itens, cursor, scroll, hei, selected)
+	local action = luaterm.raw_read()
+	if keymap[action] == nil then
+		goto continue
 	end
 
-	repeat
-		delim = options.delim
-		itens = parse_str(str, delim)
-		display_itens(screen, itens, cursor, scroll, hei, selected)
-
-		local action = luaterm.raw_read()
-		if keymap[action] == nil then
-			goto continue
-		end
-
-		if action == '\t' then
-			local at = find(selected, itens[scroll+cursor-1])
-			if at == nil then
-				table.insert(selected, itens[scroll+cursor-1])
-			else
-				table.remove(selected, at)
-			end
+	if action == '\t' then
+		local at = find(selected, itens[scroll+cursor-1])
+		if at == nil then
+			table.insert(selected, itens[scroll+cursor-1])
 		else
-			cursor,scroll = move_cursor(action, cursor, scroll, hei, #itens)
+			table.remove(selected, at)
 		end
-
-		::continue::
-	until action == "q" or action == "\n"
-	screen:write("\27[2J\27[H")
-	screen:close()
-
-	if #selected == 0 then
-		print(itens[scroll+cursor-1])
 	else
-		for _,v in ipairs(selected) do
-			print(v)
-		end
+		cursor,scroll = move_cursor(action, cursor, scroll, hei, #itens)
 	end
-end
---]]
+	::continue::
+until action == '\n'
+screen:write("\27[2J\27[H")
+screen:close()
+
 luaterm.enable_canon()
 luaterm.restore_term()
+
+if #selected == 0 then
+	print(itens[scroll+cursor-1])
+else
+	for _,v in ipairs(selected) do
+		print(v)
+	end
+end
