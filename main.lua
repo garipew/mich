@@ -7,7 +7,7 @@ local luaterm = assert(require("luaterm"))
 local isatty = assert(luaterm.isatty(luaterm.get_fd(io.stdin)) == 1,
 		"mich must be run from a tty")
 
-local hei,wid = luaterm.get_size()
+hei,wid = luaterm.get_size()
 
 
 help = [[
@@ -39,13 +39,6 @@ options_table = {
 	["-d"] = 1,
 	["-h"] = 0,
 	["-c"] = 1,
-}
-
-
-keymap = {
-	["j"] = 1,
-	["k"] = -1,
-	["\t"] = 0,
 }
 
 --[[
@@ -164,7 +157,7 @@ function find(table, item)
 end
 
 
-function display_itens(screen, itens, cursor, scroll, hei, selected)
+function display_itens(screen, itens, selected)
 	local clean = "\27[2J\27[H"
 	for i=scroll,scroll+hei-1 do
 		if i > #itens then
@@ -190,24 +183,22 @@ function display_itens(screen, itens, cursor, scroll, hei, selected)
 end
 
 
-function scroll_up(scroll)
+function scroll_up()
 	if scroll > 1 then
-		return scroll-1
+		scroll = scroll-1
 	end	
-	return scroll
 end
 
 
-function scroll_down(scroll, hei, max)
+function scroll_down(max)
 	if scroll+hei-1 < max then
-		return scroll+1
+		scroll = scroll+1
 	end
-	return scroll
 end
 
 
-function move_cursor(action, cursor, scroll, hei, max)
-	local new_cursor = cursor + keymap[action]
+function move_cursor(direction, max)
+	local new_cursor = cursor + direction
 	local new_scroll = scroll
 
 	if new_cursor > max then
@@ -215,12 +206,13 @@ function move_cursor(action, cursor, scroll, hei, max)
 	end
 	
 	if new_cursor < 1 then
-		new_scroll = scroll_up(scroll)
+		scroll_up()
 		new_cursor = 1
 	elseif new_cursor > hei then
-		new_scroll = scroll_down(scroll, hei, max)
+		scroll_down(max)
 		new_cursor = hei
 	end
+	cursor = new_cursor
 
 	return new_cursor,new_scroll
 end
@@ -237,6 +229,19 @@ function get_itens(args, options_count)
 end
 
 
+function toggle_selection(selected, itens)
+	local item = itens[cursor+scroll-1] 
+	local at = find(selected, item)
+	if at == nil then
+		table.insert(selected, item)
+	else
+		table.remove(selected, at)
+	end
+end
+
+cursor = -1
+scroll = -1
+
 local selected = {}
 local options = process_options(arg, options_table)
 local itens_str = get_itens(arg, options.count)
@@ -245,9 +250,16 @@ if itens_str == nil then
 	os.exit(1)
 end
 local itens = parse_str(itens_str, options.delim)
+keymap = {
+	["\t"] = {fun=toggle_selection, args={selected, itens}},
+	["J"] = {fun=scroll_down, args={#itens}},
+	["K"] = {fun=scroll_up, args={}},
+	["j"] = {fun=move_cursor, args={1, #itens}},
+	["k"] = {fun=move_cursor, args={-1, #itens}},
+}
 
-local cursor = options.cursor
-local scroll = 1
+cursor = options.cursor
+scroll = 1
 if cursor < 1 then
 	cursor = 1
 elseif cursor > #itens then
@@ -267,22 +279,14 @@ luaterm.load_term(luaterm.get_fd(io.stdin))
 luaterm.disable_canon(1, 0)
 
 repeat
-	display_itens(screen, itens, cursor, scroll, hei, selected)
+	display_itens(screen, itens, selected)
 	local action = luaterm.raw_read()
 	if keymap[action] == nil then
 		goto continue
 	end
-
-	if action == '\t' then
-		local at = find(selected, itens[scroll+cursor-1])
-		if at == nil then
-			table.insert(selected, itens[scroll+cursor-1])
-		else
-			table.remove(selected, at)
-		end
-	else
-		cursor,scroll = move_cursor(action, cursor, scroll, hei, #itens)
-	end
+	
+	assert(keymap[action].fun, "mapped keys have to register a function")
+	keymap[action].fun(table.unpack(keymap[action].args))
 	::continue::
 until action == '\n'
 screen:write("\27[2J\27[H") -- Clear screen

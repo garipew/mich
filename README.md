@@ -37,9 +37,11 @@ mich -h
 ```  
 
 ### Navigation
-mich implements vim-like navigation
+mich implements vim-**like** navigation
 
 - <kbd>j</kbd> - Move cursor down
 - <kbd>k</kbd> - Move cursor up
+- <kbd>J</kbd> - Scroll down
+- <kbd>K</kbd> - Scroll up
 - <kbd>Tab</kbd> - Select item under the cursor
 - <kbd>Enter</kbd> - Prints selected itens to stdout
