@@ -6,8 +6,6 @@
 #include <unistd.h>
 #include <sys/ioctl.h>
 
-#define CTRLD 0x4
-
 
 extern struct termios fixed;
 extern struct termios unfixed;

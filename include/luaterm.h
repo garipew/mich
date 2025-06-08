@@ -6,8 +6,6 @@
 #include <lauxlib.h>
 
 
-lua_State* lua_create_thread(); 
-lua_State* lua_fork_thread();
 int lua_raw_read(lua_State*);
 int lua_load_term(lua_State*);
 int lua_disable_canon(lua_State*);
