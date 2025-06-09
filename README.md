@@ -1,12 +1,7 @@
 # mich
 mich is an item selector TUI applet made in lua.
 
-The presented itens can be selected with <kbd>Tab</kbd>.
-
-When <kbd>Enter</kbd> is pressed, all selected itens are written to stdout.
-
-If no item is selected, on <kbd>Enter</kbd> mich will write the option highlighted by the cursor.
-
+![screenshot](screenshots/mich.png)
 
 ## Installation
 To install mich, first clone this repository with
@@ -35,6 +30,13 @@ In order to learn more about mich options, try
 ```
 mich -h
 ```  
+
+## Notes
+Itens can be selected with <kbd>Tab</kbd>.
+
+When <kbd>Enter</kbd> is pressed, all selected itens are written to stdout.
+
+If no item is selected, then mich will write the item under the cursor to stdout.
 
 ### Navigation
 mich implements vim-**like** navigation
