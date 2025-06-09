@@ -1,5 +1,5 @@
 # mich
-mich is an item selector TUI applet made in lua.
+An item selector TUI applet made in lua.
 
 ![screenshot](screenshots/mich.png)
 
@@ -32,11 +32,11 @@ mich -h
 ```  
 
 ## Notes
-Itens can be selected with <kbd>Tab</kbd>.
+- mich is not a standalone application but a tool to integrate on your pipeline. (check our [examples](examples))
 
-When <kbd>Enter</kbd> is pressed, all selected itens are written to stdout.
+- All selected itens are written to stdout on <kbd>Enter</kbd>.
 
-If no item is selected, then mich will write the item under the cursor to stdout.
+- If no item is selected, then the item under the cursor is written.
 
 ### Navigation
 mich implements vim-**like** navigation
