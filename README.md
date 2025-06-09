@@ -32,7 +32,7 @@ mich -h
 ```  
 
 ## Notes
-- mich is not a standalone application but a tool to integrate on your pipeline. (check our [examples](examples))
+- mich is not a standalone application but a tool to integrate into your pipeline. (check our [examples](examples))
 
 - All selected itens are written to stdout on <kbd>Enter</kbd>.
 
