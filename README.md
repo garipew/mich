@@ -20,13 +20,13 @@ To uninstall, ~~dont bother~~
 sudo ./uninstall.sh
 ```
 
-## Execution
-To execute mich, pass the options as arguments
+## Usage
+Pass the options as arguments
 ```
 mich option1 option2 option3
 ```
 
-In order to learn more about mich options, try
+For more on usage, try
 ```
 mich -h
 ```  
