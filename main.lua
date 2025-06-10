@@ -7,9 +7,6 @@ local luaterm = assert(require("luaterm"))
 local isatty = assert(luaterm.isatty(luaterm.get_fd(io.stdin)) == 1,
 		"mich must be run from a tty")
 
-hei,wid = luaterm.get_size()
-
-
 help = [[
 Name
 	mich
@@ -35,7 +32,8 @@ Options
 ]]
 
 
-options_table = {
+local dimensions = {luaterm.get_size()}
+local options_table = {
 	["-d"] = 1,
 	["-h"] = 0,
 	["-c"] = 1,
@@ -157,64 +155,57 @@ function find(table, item)
 end
 
 
-function display_itens(screen, itens, selected)
-	local clean = "\27[2J\27[H"
-	for i=scroll,scroll+hei-1 do
-		if i > #itens then
+function dump_itens(navi, itens, selected)
+	local dump = "\27[2J\27[H"
+	for i=navi.scroll,navi.scroll+navi.rows-1 do
+		if i > navi.max then
 			break
 		end
-		local line = ""
-		if i == scroll then
-			line = line .. clean
-		end
-		if i == cursor+scroll-1 then
-			line = line .. "\27[0;30;44m" .. itens[i] .. "\27[0m"
+		if i == navi.cursor+navi.scroll-1 then
+			dump = dump .. "\27[0;30;44m" .. itens[i] .. "\27[0m"
 		elseif find(selected, itens[i]) ~= nil then
-			line = line .. "\27[0;30;45m" .. itens[i] .. "\27[0m"
+			dump = dump .. "\27[0;30;45m" .. itens[i] .. "\27[0m"
 		else
-			line = line .. itens[i]
+			dump = dump .. itens[i]
 		end
-		if i ~= scroll+hei-1 then
-			line = line .. "\n"
+		if i < navi.scroll+navi.rows-1 then
+			dump = dump .. "\n"
 		end
-		screen:write(line)
 	end
-	screen:flush()
+	return dump
 end
 
 
-function scroll_up()
-	if scroll > 1 then
-		scroll = scroll-1
+function scroll_up(navi)
+	if navi.scroll > 1 then
+		navi.scroll = navi.scroll-1
 	end	
 end
 
 
-function scroll_down(max)
-	if scroll+hei-1 < max then
-		scroll = scroll+1
+function scroll_down(navi)
+	if navi.scroll+navi.rows-1 < navi.max then
+		navi.scroll = navi.scroll+1
 	end
 end
 
 
-function move_cursor(direction, max)
-	local new_cursor = cursor + direction
-	local new_scroll = scroll
+function move_cursor(direction, navi)
+	local new_cursor = navi.cursor + direction
+	local new_scroll = navi.scroll
 
-	if new_cursor > max then
-		new_cursor = max
+	if new_cursor > navi.max then
+		new_cursor = navi.max
 	end
 	
 	if new_cursor < 1 then
-		scroll_up()
+		scroll_up(navi)
 		new_cursor = 1
-	elseif new_cursor > hei then
-		scroll_down(max)
-		new_cursor = hei
+	elseif new_cursor > navi.rows then
+		scroll_down(navi)
+		new_cursor = navi.rows
 	end
-	cursor = new_cursor
-
-	return new_cursor,new_scroll
+	navi.cursor = new_cursor
 end
 
 
@@ -229,8 +220,8 @@ function get_itens(args, options_count)
 end
 
 
-function toggle_selection(selected, itens)
-	local item = itens[cursor+scroll-1] 
+function toggle_selection(selected, itens, navi)
+	local item = itens[navi.cursor+navi.scroll-1] 
 	local at = find(selected, item)
 	if at == nil then
 		table.insert(selected, item)
@@ -239,8 +230,20 @@ function toggle_selection(selected, itens)
 	end
 end
 
-cursor = -1
-scroll = -1
+
+function create_navigator(cursor, scroll, rows, max)
+	local navi = {cursor=cursor, scroll=scroll, rows=rows, max=max} 
+	if navi.cursor < 1 then
+		navi.cursor = 1
+	elseif navi.cursor > max then
+		navi.cursor = max
+	end
+	if navi.cursor > rows then
+		navi.scroll = navi.cursor+1-rows
+		navi.cursor = rows
+	end
+	return navi
+end
 
 local selected = {}
 local options = process_options(arg, options_table)
@@ -250,25 +253,15 @@ if itens_str == nil then
 	os.exit(1)
 end
 local itens = parse_str(itens_str, options.delim)
-keymap = {
-	["\t"] = {fun=toggle_selection, args={selected, itens}},
-	["J"] = {fun=scroll_down, args={#itens}},
-	["K"] = {fun=scroll_up, args={}},
-	["j"] = {fun=move_cursor, args={1, #itens}},
-	["k"] = {fun=move_cursor, args={-1, #itens}},
-}
+local navigator = create_navigator(options.cursor, 1, dimensions[1], #itens)
 
-cursor = options.cursor
-scroll = 1
-if cursor < 1 then
-	cursor = 1
-elseif cursor > #itens then
-	cursor = #itens
-end
-if cursor > hei then
-	scroll = cursor+1-hei
-	cursor = hei
-end
+local keymap = {
+	["\t"] = {fun=toggle_selection, args={selected, itens, navigator}},
+	["J"] = {fun=scroll_down, args={navigator}},
+	["K"] = {fun=scroll_up, args={navigator}},
+	["j"] = {fun=move_cursor, args={1, navigator}},
+	["k"] = {fun=move_cursor, args={-1, navigator}},
+}
 local screen = io.open("/dev/tty", "w")
 if screen == nil then
 	os.exit(2)
@@ -279,7 +272,9 @@ luaterm.load_term(luaterm.get_fd(io.stdin))
 luaterm.disable_canon(1, 0)
 
 repeat
-	display_itens(screen, itens, selected)
+	local dump = dump_itens(navigator, itens, selected)
+	screen:write(dump)
+	screen:flush()
 	local action = luaterm.raw_read()
 	if keymap[action] == nil then
 		goto continue
@@ -297,7 +292,7 @@ luaterm.enable_canon()
 luaterm.restore_term()
 
 if #selected == 0 then
-	print(itens[scroll+cursor-1])
+	print(itens[navigator.scroll+navigator.cursor-1])
 else
 	for _,v in ipairs(selected) do
 		print(v)
