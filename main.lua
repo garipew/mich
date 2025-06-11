@@ -133,15 +133,13 @@ Return Value
 	substrings of str that ended in delim.
 
 ]]--
-function parse_str(str, delim)
+function parse_str(itens, str, delim)
 	if delim == " " or delim == nil then
 		delim = "%s"
 	end
-	local itens = {}
 	for item in str:gmatch("[^"..delim.."]+") do
 		table.insert(itens, item)
 	end	
-	return itens
 end
 
 
@@ -209,16 +207,31 @@ function move_cursor(direction, navi)
 end
 
 
-function get_itens(args, options_count)
-	local not_opt = arg[options_count+1]
+function get_itens_str(args, options_count)
+	local not_opt = args[options_count+1]
 	if not_opt ~= nil then
-		for i=2,#arg-options_count do
-			not_opt = not_opt .. " " .. arg[options_count+i]
+		for i=2,#args-options_count do
+			not_opt = not_opt .. " " .. args[options_count+i]
 		end
 	end
 	return not_opt
 end
 
+
+function get_itens(args, options)
+	local itens = {}
+	if #args == options.count then
+		print("Usage: " .. args[0] .. " [-h] [-d DELIM] [-c CURS] ITENS")
+		os.exit(1)
+	end
+	if options.delim == ' ' and #args-options.count > 1 then
+		table.move(args, options.count+1, #args-options.count, 1, itens)
+	else
+		local itens_str = get_itens_str(args, options.count)
+		parse_str(itens, itens_str, options.delim)
+	end
+	return itens
+end
 
 function toggle_selection(selected, itens, navi)
 	local item = itens[navi.cursor+navi.scroll-1] 
@@ -247,14 +260,8 @@ end
 
 local selected = {}
 local options = process_options(arg, options_table)
-local itens_str = get_itens(arg, options.count)
-if itens_str == nil then
-	print("Usage: " .. arg[0] .. " [-h] [-d DELIM] [-c CURS] ITENS")
-	os.exit(1)
-end
-local itens = parse_str(itens_str, options.delim)
+local itens = get_itens(arg, options)
 local navigator = create_navigator(options.cursor, 1, dimensions[1], #itens)
-
 local keymap = {
 	["\t"] = {fun=toggle_selection, args={selected, itens, navigator}},
 	["J"] = {fun=scroll_down, args={navigator}},

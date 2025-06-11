@@ -2,12 +2,11 @@
 #
 # Pick an image under $HOME/Images/bg and call pywal to
 # change themes accordingly.
-#
 
 path="$HOME/Images/bg/"
 if (( $# > 0 )); then
 	path="$1"
 fi
 
-bg=$(mich -d '\' $(ls $path | xargs -d '\n' printf "%s\\"))
+bg=$(ls $path | xargs -o -d '\n' mich)
 wal -i $path$bg
