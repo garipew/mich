@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+#
+# An example file explorer made with mich.
+
+path=$PWD
+while true; do
+	if [[ $(cut -d " " -f2 < <(file $path)) == "directory" ]]; then
+		target=$(ls -a $path | xargs -d '\n' -o mich Exit)
+		if [[ $target == "Exit" ]]; then
+			break
+		fi
+		path="$path/$target"
+	else
+		path="$path/.."
+	fi
+done
+echo $path
