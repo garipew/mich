@@ -11,7 +11,7 @@ help = [[
 Name
 	mich
 Synopsis
-	mich [-h] [-d DELIM] [-c CURS] ITENS
+	mich [-h] [-d DELIM] [-c CURS] [-s SEL] ITENS
 
 Description
 	The objective of this program is to present a minimal UI for
@@ -28,7 +28,9 @@ Options
                    The default value of DELIM used is the space
 		   character.
 	-c CURS - Define the start value of the cursor to CURS.
-		 The default value of CURS is 1.
+		  The default value of CURS is 1.
+	-s SEL - Defines the maximum amount of itens selected
+		 at the same time.
 ]]
 
 
@@ -37,6 +39,7 @@ local options_table = {
 	["-d"] = 1,
 	["-h"] = 0,
 	["-c"] = 1,
+	["-s"] = 1,
 }
 
 --[[
@@ -88,6 +91,7 @@ function process_options(args, options_table)
 	local count = 0
 	local delim = " "
 	local cursor = 1
+	local sel = -1
 	for opt,optargs in pairs(options) do
 		count = count+1+options_table[opt]
 		if opt == "-h" then
@@ -106,8 +110,14 @@ function process_options(args, options_table)
 				print_bad_argument("CURS must be a number")
 			end
 		end
+		if opt == "-s" then
+			sel = tonumber(optargs[1])
+			if sel == nil then
+				print_bad_argument("SEL must be a number")
+			end
+		end
 	end		
-	return {count=count, cursor=cursor, delim=delim}
+	return {count=count, cursor=cursor, delim=delim, sel=sel}
 end
 
 
@@ -233,10 +243,16 @@ function get_itens(args, options)
 	return itens
 end
 
-function toggle_selection(selected, itens, navi)
+function toggle_selection(selected, itens, navi, max_selections)
+	if max_selections == 0 then
+		return
+	end
 	local item = itens[navi.cursor+navi.scroll-1] 
 	local at = find(selected, item)
 	if at == nil then
+		if #selected == max_selections then
+			table.remove(selected, 1)
+		end
 		table.insert(selected, item)
 	else
 		table.remove(selected, at)
@@ -260,10 +276,11 @@ end
 
 local selected = {}
 local options = process_options(arg, options_table)
+local sel = options.sel
 local itens = get_itens(arg, options)
 local navigator = create_navigator(options.cursor, 1, dimensions[1], #itens)
 local keymap = {
-	["\t"] = {fun=toggle_selection, args={selected, itens, navigator}},
+	["\t"] = {fun=toggle_selection, args={selected, itens, navigator, sel}},
 	["J"] = {fun=scroll_down, args={navigator}},
 	["K"] = {fun=scroll_up, args={navigator}},
 	["j"] = {fun=move_cursor, args={1, navigator}},
